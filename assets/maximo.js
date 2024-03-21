@@ -1,7 +1,7 @@
 // various functions for fetching data from maximo rest api
 const SharedDatabase = require('../assets/sharedDB');
 const CONSTANTS = require('../assets/constants.js');
-
+const Jimp = require('jimp');
 
 /**
  * Class for all calls to Maximo
@@ -419,7 +419,6 @@ class Maximo {
       },
     });
     content = await response.json();
-
     // if image exists
     if (content['_imagelibref']) {
       // console.log("image exists");
@@ -436,6 +435,9 @@ class Maximo {
       // dont upload image
       return ['warning', 'Image already exists for item number'];
     }
+  
+    //pad image into a square
+    image =this.padImage(image);
 
     // upload new image
     response = await fetch(`https://${CONSTANTS.ENV}.iko.max-it-eam.com/maximo/api/os/mxitem/${itemId}?action=system:addimage`, {
@@ -449,8 +451,40 @@ class Maximo {
       },
       body: image,
     });
-    // console.log(response['statusText']);
+
+    console.log(response['status']);
     return ['success'];
+  }
+
+  /**
+   * adds white space to the given image's border to make it a square
+   * @param {File} oImage - image to pad 
+   * @returns {File} - square image with padding
+   */
+  async padImage(oImage){
+    const mimeType = oImage.type;
+    const oImgBuf = Buffer.from(await oImage.arrayBuffer()); 
+    console.log(mimeType);
+    const img = await new Promise((resolve, reject) => {
+        Jimp.read(oImgBuf)
+          .then((oImgJimp) => {
+            console.log("read");
+            const largestDim = Math.max(oImgJimp.getWidth(), oImgJimp.getHeight());
+            console.log(`${oImgJimp.getWidth()}, ${oImgJimp.getHeight()}, ${largestDim}`);
+            new Jimp(largestDim, largestDim,  '#ffffffff', (err, image) => {
+              console.log("created");
+              image.blit(oImgJimp, (largestDim - oImgJimp.getWidth())/2, (largestDim - oImgJimp.getHeight())/2);
+              image.getBufferAsync(mimeType)
+                .then((buffer) => {
+                  console.log("export");
+                  const newImg = new Blob([buffer], {type: mimeType});
+                  resolve(newImg);
+                });
+            }); 
+        });
+    });
+    console.log(await new Promise(r => {let a=new FileReader(); a.onload=r; a.readAsDataURL(img)}).then(e => e.target.result));
+    return img;
   }
 }
 
