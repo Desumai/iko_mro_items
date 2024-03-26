@@ -520,7 +520,7 @@ document.getElementById('storeroom-btn').addEventListener('click', () => {
     siteID: localStorage.getItem('userSite'),
     vendorname: '',
   };
-  worker.work(['uploadInventory', upload]);
+  worker.work(['addToStoreroom', upload]);
 });
 
 // Other

@@ -114,6 +114,9 @@ onmessage = function (e) {
     case 'uploadInventory':
       uploadInventory(e.data[1]);
       break;
+    case 'addToStoreroom':
+      addToStoreroom(e.data[1]);
+      break;
     default:
       console.log(`Unimplimented work ${e.data[0]}`);
   }
@@ -128,6 +131,14 @@ async function uploadInventory(item) {
   console.log(await maximo.uploadToInventory(item));
 }
 
+/**
+ * Adds a selected item to a storeroom. For regualar users 
+ * @param {*} params 
+ */
+async function addToStoreroom(item){
+  const maximo = new Maximo();
+  console.log(await maximo.uploadToStoreroom(item));
+}
 
 async function saveProgress(params) {
   const db = new Database();

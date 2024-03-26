@@ -379,7 +379,50 @@ class Maximo {
       return 0;
     }
   }
+  /**
+   * adds an item to a storeroom
+   * @param {Map} item 
+   */
+  async uploadToStoreroom(item){
+    try {
+      //get storeroom id
+      var response = await fetch(`https://${CONSTANTS.ENV}.iko.max-it-eam.com/maximo/api/os/iko_location?lean=1&oslc.where=location="${item['storeroomname']}"&oslc.select=*`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.login.userid,
+        }
+      });
+      if (response.status != 200) {
+        console.log(response.status);
+        throw new Error("error on getting storeroom id");
+      }
+      var content = await response.json();
+      const storeroomID = (href => {return href.substr(href.lastIndexOf("/") + 1)})(content['member'][0]['href']);
+      console.log(storeroomID);
 
+      //make request to add item to storeroom
+      response = await fetch(`https://${CONSTANTS.ENV}.iko.max-it-eam.com/maximo/api/os/iko_location/${storeroomID}?internalvalues=1&lean=1&action=wsmethod:addAnItemToStoreroom&domainmeta=1&querylocalized=1`, {
+        method: 'POST',
+        headers: {
+          'apikey': this.login.userid,
+        },
+        body: {
+          'itemnum': item['itemnumber'],
+          'itemsetid': "ITEMSET1",
+          'storeroom': item['storeroomname'],
+          'siteid': item['siteID'],
+        }
+      });
+      if (response.status != 200) {
+        console.log(response.status);
+        throw new Error("error on adding to storeroom");
+      }
+    } catch (e) {
+      console.error(e);
+      return "failed"
+    }
+    return "complete";
+  }
   /**
        * Uploads an image to maximo
        *
